@@ -1,31 +1,26 @@
-from metrics import calc_labor_cost_ratio, calc_revenue_per_employee
+import pandas as pd
+from metrics import calc_labor_cost_ratio_series
 
-companies = [
-    {"name": "桃李面包", "revenue": 6000000, "labor_cost": 1200000, "headcount": 100},
-    {"name": "立高食品", "revenue": 4000000, "labor_cost": 800000, "headcount": 0},
-    {"name": "元祖股份", "revenue": 3000000, "labor_cost": None, "headcount": 50},
-]
+def main():
+    df = pd.read_csv("data/benchmark_raw.csv", dtype={"code": str})
+    
+    annual = df[df["报告日"] % 10000 == 1231].copy()
+    annual["year"] = annual["报告日"] // 10000
 
-results = []
-for company in companies:
-    ratio = calc_labor_cost_ratio(company["labor_cost"], company["revenue"])
-    per_employee = calc_revenue_per_employee(company["revenue"], company["headcount"])
-    results.append({
-        "name": company["name"],
-        "labor_cost_ratio": ratio,
-        "revenue_per_employee": per_employee,
-    })
+    annual["人工成本率"] = calc_labor_cost_ratio_series(
+        annual["支付给职工以及为职工支付的现金"],
+        annual["营业收入"]
+    )
 
-total_ratio = 0
-valid_count = 0
-for r in results:
-    if r["labor_cost_ratio"] is not None:
-        total_ratio = total_ratio + r["labor_cost_ratio"]
-        valid_count = valid_count + 1
-average_ratio = total_ratio / valid_count
+    by_company = annual.groupby("name")["人工成本率"].agg(["mean", "std", "min", "max"])
+    print("各公司人工成本率统计(%)：")
+    print(by_company)
 
-print("各公司指标:")
-for r in results:
-    print(r)
+    print()
 
-print(f"平均人工成本率: {average_ratio}")
+    by_year = annual.groupby("year")["人工成本率"].agg(["mean", "std", "min", "max"])
+    print("各年度人工成本率统计(%):")
+    print(by_year)
+
+if __name__ == "__main__":
+    main()
