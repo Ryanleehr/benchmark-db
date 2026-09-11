@@ -1,15 +1,35 @@
 """对标数据库 HTTP 服务。"""
 
+import os
 import sqlite3
 
 import pandas as pd
-from fastapi import FastAPI
+from dotenv import load_dotenv
+from fastapi import Depends, FastAPI, Header, HTTPException
 
 from src import queries
+
+load_dotenv()
 
 app = FastAPI(title="食品行业人效对标 API")
 
 DB_PATH = "data/benchmark.db"
+API_TOKEN = os.getenv("API_TOKEN")
+
+
+def verify_token(authorization: str = Header(None)):
+    """校验请求头里的 Authorization。"""
+    if authorization is None:
+        raise HTTPException(status_code=401, detail="缺少 Authorization 请求头")
+
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authorization 格式错误，应为 'Bearer <token>'")
+
+    token = authorization[7:]
+    if token != API_TOKEN:
+        raise HTTPException(status_code=403, detail="token 无效")
+
+    return token
 
 
 def get_conn():
@@ -34,7 +54,7 @@ def list_companies():
         conn.close()
 
 @app.get("/metrics/{code}")
-def company_metrics(code: str):
+def company_metrics(code: str, token: str = Depends(verify_token)):
     """返回指定公司的历年人工成本率。"""
     conn = get_conn()
     try:
