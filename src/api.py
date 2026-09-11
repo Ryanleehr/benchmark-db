@@ -71,3 +71,34 @@ def company_metrics(code: str, token: str = Depends(verify_token)):
         return df.to_dict(orient="records")
     finally:
         conn.close()
+
+@app.get("/benchmark")
+def benchmark(year: int = 2025, token: str = Depends(verify_token)):
+    """返回指定年度全部公司的横向对比。"""
+    report_date = year * 10000 + 1231
+    conn = get_conn()
+    try:
+        sql = """
+        SELECT 
+            c.name,
+            c.segment,
+            ROUND(f.labor_cash * 100.0 / f.revenue, 2) AS labor_cost_ratio,
+            ROUND(f.net_profit * 100.0 / f.revenue, 2) AS profit_margin,
+            ROUND(f.revenue / 100000000.0, 2) AS revenue_yi
+        FROM financials f
+        JOIN companies c ON f.code = c.code
+        WHERE f.report_date = ?
+        ORDER BY labor_cost_ratio ASC
+        """
+        df = pd.read_sql(sql, conn, params=(report_date,))
+        return df.to_dict(orient="records")
+    finally:
+        conn.close()
+
+@app.post("/sync")
+def sync_data(token: str = Depends(verify_token)):
+    """触发数据同步（当前为占位实现）。"""
+    return {
+        "status": "accepted",
+        "message": "数据同步功能待实现，将在 Week 11 接入定时任务",
+    }
