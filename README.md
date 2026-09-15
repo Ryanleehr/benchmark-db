@@ -1,7 +1,85 @@
 # 食品行业人效对标数据库
 
-用于对标国内食品制造上市公司的人效指标。
+自动抓取国内食品制造上市公司财报数据，计算人效指标，通过 API 提供行业对标查询。
 
-# Food Industry Workforce Benchmark
+## 背景
 
-A benchmarking database for Chinese listed food manufacturers.
+做人效分析时，同行对标数据需要手工从年报里逐份摘取，每次耗时数小时，且不同人摘取的口径容易不一致。本项目将这一过程自动化，覆盖 8 家食品制造上市公司近 6 年的财务数据。
+
+## 核心指标
+
+| 指标 | 计算方式 |
+|---|---|
+| 人工成本率 | 支付给职工以及为职工支付的现金 ÷ 营业收入 |
+| 净利率 | 净利润 ÷ 营业收入 |
+| 人均营收 | 营业收入 ÷ 员工人数 |
+
+**口径说明**：财报现金流量表为累计数，因此统一取 1231 报告期（全年数）进行对标，避免季度数据混算。
+
+## 对标公司
+
+按商业模式分赛道，避免跨模式直接比较：
+
+| 公司 | 代码 | 赛道 |
+|---|---|---|
+| 桃李面包 | 603866 | 烘焙-批发 |
+| 立高食品 | 300973 | 烘焙-原料 |
+| 元祖股份 | 603886 | 烘焙-门店 |
+| 安井食品 | 603345 | 速冻-多渠道 |
+| 三全食品 | 002216 | 速冻-传统 |
+| 千味央厨 | 001215 | 餐饮供应链 |
+| 广州酒家 | 603043 | 食品+餐饮 |
+| 绝味食品 | 603517 | 卤味连锁 |
+
+## 技术栈
+
+Python 3.12 · pandas · SQLite · FastAPI · requests
+
+## 快速开始
+
+```bash
+# 安装依赖
+pip install -r requirements.txt
+
+# 配置环境变量
+cp .env.example .env
+# 编辑 .env 填入 API_TOKEN
+
+# 启动服务
+uvicorn src.api:app --reload --port 8000
+```
+
+## API 接口
+
+| 方法 | 路径 | 鉴权 | 说明 |
+|---|---|---|---|
+| GET | `/health` | 否 | 健康检查 |
+| GET | `/companies` | 否 | 对标公司列表 |
+| GET | `/metrics/{code}` | 是 | 指定公司历年指标 |
+| GET | `/benchmark?year=2025` | 是 | 指定年度横向对比 |
+| POST | `/sync` | 是 | 触发数据同步 |
+
+鉴权方式：请求头携带 `Authorization: Bearer <token>`
+
+交互式文档：服务启动后访问 `http://localhost:8000/docs`
+
+## 项目结构
+src/
+├── fetcher_raw.py 原生 HTTP 抓取（含分页、重试、指数退避）
+├── build_dataset.py 数据集构建
+├── clean.py 科目名称标准化
+├── metrics.py 指标计算
+├── queries.py 业务查询
+├── load_headcount.py 员工人数导入
+├── main.py 命令行分析入口
+└── api.py HTTP 服务
+
+data/
+├── companies.csv 对标公司清单
+├── headcount.csv 员工人数（手工维护，来源为各公司年报）
+└── benchmark.db SQLite 数据库（不入库）
+
+
+## 数据来源
+
+财务数据来自新浪财经公开接口；员工人数手工摘自各公司年报"员工情况"章节，每条记录保留来源标注。
