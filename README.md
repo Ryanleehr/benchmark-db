@@ -1,3 +1,7 @@
+# 食品行业人效对标数据库
+
+用于对标国内食品制造上市公司的人效指标。
+
 # Food Industry Workforce Benchmark
 
 A benchmarking database for Chinese listed food manufacturers.
