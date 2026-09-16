@@ -26,3 +26,17 @@ def calc_revenue_per_employee_series(revenue_series, headcount_series):
     per_capita = revenue_series / headcount_series
     return per_capita.replace([np.inf, -np.inf], np.nan)
 
+
+def is_annual_report(report_date):
+    """判断报告期是否为年报（1231 结尾）。"""
+    return report_date % 10000 == 1231
+
+
+def extract_year(report_date):
+    """从 8 位报告期提取年份。"""
+    return report_date // 10000
+
+
+def year_to_report_date(year):
+    """把年份转成年报报告期。"""
+    return year * 10000 + 1231
