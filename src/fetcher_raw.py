@@ -1,3 +1,7 @@
+from log_config import setup_logger
+
+logger = setup_logger("fetcher", log_file="logs/fetcher.log")
+
 """不依赖 AKShare, 直接用 requests 抓取新浪财经财报数据。"""
 import time
 import requests
@@ -55,13 +59,13 @@ def fetch_with_retry(stock_code, report_type, page=1, num=50, max_retries=5):
             last_error = e
             if e.response.status_code == 429 or e.response.status_code >= 500:
                 if attempt < max_retries:
-                    print(f"第 {attempt} 次失败({e.response.status_code}),{delay}秒后重试")
+                                        logger.warning(f"第 {attempt} 次失败({e.response.status_code})，{delay}秒后重试")
             else:
                 raise
         except requests.RequestException as e:
             last_error = e
             if attempt < max_retries:
-                print(f"第  {attempt} 次失败({type(e).__name__}),{delay}秒后重试")
+                                logger.warning(f"第 {attempt} 次失败({type(e).__name__})，{delay}秒后重试")
         
         if attempt < max_retries:
             time.sleep(delay)
@@ -76,16 +80,16 @@ def fetch_all_reports(stock_code, report_type,page_size=50):
     """
     first = fetch_one_page(stock_code, report_type, page=1, num=page_size)
     total = int(first["result"]["data"]["report_count"])
+    logger.info(f"{stock_code} {report_type}: 共 {total} 期数据")
 
     all_reports = dict(first["result"]["data"]["report_list"])
-
     total_pages = (total + page_size - 1) // page_size
 
     for page in range(2, total_pages + 1):
         time.sleep(0.5)
         data = fetch_one_page(stock_code, report_type, page=page, num=page_size)
         all_reports.update(data["result"]["data"]["report_list"])
-
+    logger.info(f"{stock_code} {report_type}: 抓取完成，实际 {len(all_reports)} 期")
     return all_reports
 
 if __name__ == "__main__":

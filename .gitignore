@@ -4,3 +4,4 @@ __pycache__/
 *.log
 run_log.txt
 *.db
+logs/
