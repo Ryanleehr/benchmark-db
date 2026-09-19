@@ -1,3 +1,11 @@
+from log_config import setup_logger
+
+logger = setup_logger("api", log_file="logs/api.log")
+
+from apscheduler.schedulers.background import BackgroundScheduler
+
+from sync import sync_all
+
 """对标数据库 HTTP 服务。"""
 
 import os
@@ -13,6 +21,19 @@ load_dotenv()
 
 app = FastAPI(title="食品行业人效对标 API")
 
+scheduler = BackgroundScheduler(timezone="Asia/Shanghai")
+
+
+@app.on_event("startup")
+def start_scheduler():
+    scheduler.add_job(sync_all, "cron", hour=2, minute=0, id="daily_sync")
+    scheduler.start()
+    logger.info("定时任务已启动：每天 02:00 同步数据")
+
+
+@app.on_event("shutdown")
+def stop_scheduler():
+    scheduler.shutdown()
 DB_PATH = "data/benchmark.db"
 API_TOKEN = os.getenv("API_TOKEN")
 
@@ -97,8 +118,6 @@ def benchmark(year: int = 2025, token: str = Depends(verify_token)):
 
 @app.post("/sync")
 def sync_data(token: str = Depends(verify_token)):
-    """触发数据同步（当前为占位实现）。"""
-    return {
-        "status": "accepted",
-        "message": "数据同步功能待实现，将在 Week 11 接入定时任务",
-    }
+    """手动触发数据同步。"""
+    result = sync_all()
+    return result

@@ -3,6 +3,9 @@ FROM python:3.12-slim
 
 # 容器内的工作目录
 WORKDIR /app
+ENV TZ=Asia/Shanghai
+ENV TZ=Asia/Shanghai
+ENV PYTHONPATH=/app/src
 
 # 先只复制依赖清单
 COPY requirements.txt .
