@@ -5,3 +5,4 @@ __pycache__/
 run_log.txt
 *.db
 logs/
+benchmark-db/
