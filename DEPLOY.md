@@ -76,6 +76,13 @@ docker compose up -d --build
 
 数据库文件 `data/benchmark.db` 不在版本控制中（见 `.gitignore`），首次部署需要手动初始化。
 
+以下脚本在宿主机执行（非容器内），需要先准备 Python 环境：
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
 按顺序执行以下四步：
 
 ### 1. 创建表结构
@@ -133,11 +140,22 @@ curl http://localhost:8000/health
 
 ### 3. 数据与鉴权验证
 
+先确认开放接口能返回数据：
+
 ```bash
-curl -H "Authorization: Bearer <你的 API_TOKEN>" http://localhost:8000/companies
+curl http://localhost:8000/companies
 ```
 
-预期返回 8 家公司的 JSON 数组。这一步同时验证了环境变量注入、鉴权逻辑和数据库初始化三件事。
+预期返回 8 家公司的 JSON 数组。该接口无需鉴权。
+
+再验证鉴权接口：
+
+```bash
+curl -i -H "Authorization: Bearer <你的 API_TOKEN>" http://localhost:8000/metrics/603866
+```
+
+预期返回 200 和桃李面包历年指标。若 token 填错会返回 403，可以用一个错误值测试一次，
+确认鉴权确实生效。
 
 ### 交互式文档
 
